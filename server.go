@@ -65,8 +65,35 @@ func dither(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(Base64Image{image.Encode(m)})
 }
 
+func blur(w http.ResponseWriter, req *http.Request) {
+	var d Base64Image
+
+	if req.Method != "POST" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&d)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	m, err := image.Decode(d.ImageData)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	m.Blur(0.1, 3)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Base64Image{image.Encode(m)})
+}
+
 func main() {
 	http.HandleFunc("/greyscale", greyscale)
 	http.HandleFunc("/dither", dither)
+	http.HandleFunc("/blur", blur)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
