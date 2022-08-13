@@ -79,9 +79,7 @@ func (m RGBA) Dither(p color.Palette) {
 
 	errors := make([][]qerror, b.Min.Y+b.Dy())
 	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			errors[y] = make([]qerror, b.Max.X+b.Dx())
-		}
+		errors[y] = make([]qerror, b.Max.X+b.Dx())
 	}
 
 	for y := b.Min.Y; y < b.Max.Y; y++ {
