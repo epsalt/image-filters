@@ -13,87 +13,37 @@ type Base64Image struct {
 	ImageData string `json:"data"`
 }
 
-func greyscale(w http.ResponseWriter, req *http.Request) {
-	var d Base64Image
+func filterHandler(filter func(image.RGBA)) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		var d Base64Image
 
-	if req.Method != "POST" {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		if req.Method != "POST" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		decoder := json.NewDecoder(req.Body)
+		err := decoder.Decode(&d)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		m, err := image.Decode(d.ImageData)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		filter(m)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Base64Image{image.Encode(m)})
 	}
-
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&d)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	m, err := image.Decode(d.ImageData)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	m.Greyscale()
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Base64Image{image.Encode(m)})
-}
-
-func dither(w http.ResponseWriter, req *http.Request) {
-	var d Base64Image
-
-	if req.Method != "POST" {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&d)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	m, err := image.Decode(d.ImageData)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	m.Dither(palette.Plan9)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Base64Image{image.Encode(m)})
-}
-
-func blur(w http.ResponseWriter, req *http.Request) {
-	var d Base64Image
-
-	if req.Method != "POST" {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&d)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	m, err := image.Decode(d.ImageData)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	m.Blur(0.1, 3)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Base64Image{image.Encode(m)})
 }
 
 func main() {
-	http.HandleFunc("/greyscale", greyscale)
-	http.HandleFunc("/dither", dither)
-	http.HandleFunc("/blur", blur)
+	http.HandleFunc("/greyscale", filterHandler(func(m image.RGBA) { m.Greyscale() }))
+	http.HandleFunc("/blur", filterHandler(func(m image.RGBA) { m.Blur(0.1, 3) }))
+	http.HandleFunc("/dither", filterHandler(func(m image.RGBA) { m.Dither(palette.Plan9) }))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
