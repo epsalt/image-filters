@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"image/color/palette"
+	"image/color"
 	"log"
 	"net/http"
 
@@ -11,6 +11,11 @@ import (
 
 type Base64Image struct {
 	ImageData string `json:"data"`
+}
+
+var Mono = []color.Color{
+	color.RGBA{0x00, 0x00, 0x00, 0xff},
+	color.RGBA{0xff, 0xff, 0xff, 0xff},
 }
 
 func filterHandler(filter func(image.RGBA)) func(w http.ResponseWriter, req *http.Request) {
@@ -44,6 +49,7 @@ func filterHandler(filter func(image.RGBA)) func(w http.ResponseWriter, req *htt
 func main() {
 	http.HandleFunc("/greyscale", filterHandler(func(m image.RGBA) { m.Greyscale() }))
 	http.HandleFunc("/blur", filterHandler(func(m image.RGBA) { m.Blur(0.1, 3) }))
-	http.HandleFunc("/dither", filterHandler(func(m image.RGBA) { m.Dither(palette.Plan9) }))
+	http.HandleFunc("/dither", filterHandler(func(m image.RGBA) { m.Dither(Mono) }))
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

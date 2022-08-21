@@ -155,7 +155,7 @@ func (m *RGBA) Blur(sigma float64, k int) {
 				clamp(r / sum),
 				clamp(g / sum),
 				clamp(b / sum),
-				curr.A,
+				curr.A,;
 			}
 			next[x-bounds.Min.X] = new
 		}
